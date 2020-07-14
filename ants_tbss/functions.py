@@ -11,6 +11,7 @@ import matplotlib.colors as colors
 import scipy.misc as misc
 from scipy import ndimage
 from skimage import filters
+import imageio
 
 
 assert "ANTSPATH" in os.environ, "The environment variable ANTSPATH must be declared."
@@ -21,12 +22,12 @@ FSLDIR = os.environ['FSLDIR']
 def get_wildcard(searchstring, printarray = False): # super dirty
 	"""
 	Essentially glob but using bash. It outputs search arrays if more than one file is found.
-	
+
 	Parameters
 	----------
 	searchstring : str
 	printarray : bool
-	
+
 	Returns
 	-------
 	outstring : str or array
@@ -46,7 +47,7 @@ def get_wildcard(searchstring, printarray = False): # super dirty
 def runCmd_log(cmd, logname = 'cmd_log'):
 	"""
 	Run a system command and logs it
-	
+
 	Parameters
 	----------
 	cmd : str
@@ -71,7 +72,7 @@ def antsLinearRegCmd(numthreads, reference, mov, out_basename, outdir = None, us
 	Convergence: [1000x500x250x100,1e-6,10]
 	shrink-factors: 8x4x2x1
 	smoothing-sigmas: 3x2x1x0vox
-	
+
 	Parameters
 	----------
 	numthreads : int
@@ -122,12 +123,12 @@ def antsLinearRegCmd(numthreads, reference, mov, out_basename, outdir = None, us
 def antsNonLinearRegCmd(numthreads, reference, mov, out_basename, outdir = None, use_float = False):
 	"""
 	Wrapper for ANTs non-linear registration with some recommended parameters. I recommmend first using antsLinearRegCmd.
-	SyN transformation: [0.1,3,0] 
+	SyN transformation: [0.1,3,0]
 	Mutual information metric: weight = 1; bins = 32.
 	Convergence: [100x70x50x20,1e-6,10]
 	shrink-factors: 8x4x2x1
 	smoothing-sigmas: 3x2x1x0vox
-	
+
 	Parameters
 	----------
 	numthreads : int
@@ -175,7 +176,7 @@ def antsNonLinearRegCmd(numthreads, reference, mov, out_basename, outdir = None,
 def antsApplyTransformCmd(reference, mov, warps, outname, outdir = None, inverse = False, multipleimages = False):
 	"""
 	Wrapper for applying ANTs transformations (warps).
-	
+
 	Parameters
 	----------
 	reference : str
@@ -224,7 +225,7 @@ def antsApplyTransformCmd(reference, mov, warps, outname, outdir = None, inverse
 def antsBetCmd(numthreads, input_image, output_image_brain):
 	"""
 	Wrapper for applying ANTs transformations (warps).
-	
+
 	Parameters
 	----------
 	numthreads : int
@@ -233,7 +234,7 @@ def antsBetCmd(numthreads, input_image, output_image_brain):
 		Anatomical image.
 	output_image_brain : str
 		Brain extracted output image.
-	
+
 	Returns
 	-------
 	ants_cmd : str
@@ -248,7 +249,7 @@ def antsBetCmd(numthreads, input_image, output_image_brain):
 					%s/antsBrainExtraction.sh -d 3 \
 						-a %s -e %s -m %s -f %s \
 						-o %s" % (numthreads,
-									ANTSPATH, 
+									ANTSPATH,
 									input_image,
 									be_template,
 									be_probability_mask,
@@ -261,12 +262,12 @@ def antsBetCmd(numthreads, input_image, output_image_brain):
 def round_mask_transform(mask_image):
 	"""
 	Binarize a mask using numpy round and overwrites it.
-	
+
 	Parameters
 	----------
 	mask_image : str
 		/path/to/mask_image
-	
+
 	Returns
 	-------
 	None
@@ -280,12 +281,12 @@ def round_mask_transform(mask_image):
 def nifti_to_float_precision(img_name):
 	"""
 	Converts nifti image to float32 precision.
-	
+
 	Parameters
 	----------
 	img_name : str
 		/path/to/image
-	
+
 	Returns
 	-------
 	None
@@ -299,7 +300,7 @@ def nifti_to_float_precision(img_name):
 def autothreshold(data, threshold_type = 'yen', z = 2.3264):
 	"""
 	Autothresholds data.
-	
+
 	Parameters
 	----------
 	data : array
@@ -312,7 +313,7 @@ def autothreshold(data, threshold_type = 'yen', z = 2.3264):
 			Yen J.C., Chang F.J., and Chang S. (1995) A New Criterion for Automatic Multilevel Thresholding IEEE Trans. on Image Processing, 4(3): 370-378.
 	z : float
 		z-score threshold for using zscore_p
-	
+
 	Returns
 	-------
 	lthres : float
@@ -356,7 +357,7 @@ def autothreshold(data, threshold_type = 'yen', z = 2.3264):
 def draw_outline(img_png, mask_png, outline_color = [1,0,0,1], remove_mask = False):
 	"""
 	Create a read outline of a mask.
-	
+
 	Parameters
 	----------
 	img_png : str
@@ -367,7 +368,7 @@ def draw_outline(img_png, mask_png, outline_color = [1,0,0,1], remove_mask = Fal
 		float array of the outline colour  and alpha {r,g,b,a} ranging from zero to one. The default if red [1,0,0,1]
 	remove_mask : bool
 		flag to delete mask_png
-	
+
 	Returns
 	-------
 	None
@@ -391,7 +392,7 @@ def draw_outline(img_png, mask_png, outline_color = [1,0,0,1], remove_mask = Fal
 def outlay_png(img_png, outlay_png, outname = None, cleanup = False):
 	"""
 	Uses the alpha values to overlay a png on another png.
-	
+
 	Parameters
 	----------
 	img_png : str
@@ -400,7 +401,7 @@ def outlay_png(img_png, outlay_png, outname = None, cleanup = False):
 		png file of mask. e.g. overlap.png
 	remove_overlay : bool
 		flag to delete outlay_png
-	
+
 	Returns
 	-------
 	None
@@ -419,14 +420,14 @@ def outlay_png(img_png, outlay_png, outname = None, cleanup = False):
 def write_colorbar(threshold, input_cmap, name_cmap, outtype = 'png', transparent = True):
 	"""
 	Returns the coordinates of non-empty range of an image array (i.e., array with three dimensions)
-	
+
 	Parameters
 	----------
 	data : arr
 		three dimensional array
 	affine : arr
 		[optional] apply the input affine transformation first.
-	
+
 	Returns
 	-------
 	x_minmax : arr
@@ -448,14 +449,14 @@ def write_colorbar(threshold, input_cmap, name_cmap, outtype = 'png', transparen
 def nonempty_coordinate_range(data, affine = None):
 	"""
 	Returns the coordinates of non-empty range of an image array (i.e., array with three dimensions)
-	
+
 	Parameters
 	----------
 	data : arr
 		three dimensional array
 	affine : arr
 		[optional] apply the input affine transformation first.
-	
+
 	Returns
 	-------
 	x_minmax : arr
@@ -481,14 +482,14 @@ def nonempty_coordinate_range(data, affine = None):
 def sym_pad_x(arr, max_size):
 	"""
 	Pads a 2D array with zeros
-	
+
 	Parameters
 	----------
 	arr : arr
 		input numpy array
 	max_size : arr
 		largest size
-	
+
 	Returns
 	-------
 	arr : arr
@@ -504,7 +505,7 @@ def sym_pad_x(arr, max_size):
 def correct_image(img_name, b_transparent = True, rotate = None, flip = False, base_color = [0,0,0]):
 	"""
 	Remove black from png and over-writes it.
-	
+
 	Parameters
 	----------
 	img_name : str
@@ -517,12 +518,12 @@ def correct_image(img_name, b_transparent = True, rotate = None, flip = False, b
 		[optional] flip the image on the y-axis.
 	base_color : arr
 		default = [0,0,0] or black
-	
+
 	Returns
 	-------
 	None
 	"""
-	img = misc.imread(img_name)
+	img = imageio.imread(img_name)
 	if b_transparent:
 		if img_name.endswith('.png'):
 			rows = img.shape[0]
@@ -542,13 +543,13 @@ def correct_image(img_name, b_transparent = True, rotate = None, flip = False, b
 		img = ndimage.rotate(img, float(rotate))
 	if flip:
 		img = img[:,::-1,:]
-	misc.imsave(img_name, img)
+	imageio.imsave(img_name, img)
 
 
 def write_padded_png(img_data, x_space, y_space, z_space, outname, vmin = None, vmax = None, cmap = None):
 	"""
 	write padded png
-	
+
 	Parameters
 	----------
 	img_data : array
@@ -563,7 +564,7 @@ def write_padded_png(img_data, x_space, y_space, z_space, outname, vmin = None, 
 		output name (should end with png)
 	cmap : str
 		[optional] color map to use.
-	
+
 	Returns
 	-------
 	None
@@ -610,7 +611,7 @@ def write_padded_png(img_data, x_space, y_space, z_space, outname, vmin = None, 
 def linear_cm(c_start, c_end, c_mid = None, alpha = True, hide_lower = True, cmap_name = 'from_list', set_alpha = None):
 	"""
 	Function to create linear lookup table
-	
+
 	Parameters
 	----------
 	c_start : array
@@ -625,7 +626,7 @@ def linear_cm(c_start, c_end, c_mid = None, alpha = True, hide_lower = True, cma
 		hide values below the threshold. Default = True
 	cmap_name : str, optional
 		Name of color map to create.
-	
+
 	Returns
 	-------
 	cmap : dict
@@ -650,12 +651,12 @@ def linear_cm(c_start, c_end, c_mid = None, alpha = True, hide_lower = True, cma
 def cm_hide_lower(cmap_name):
 	"""
 	Add an alpha and sets the bottom color to zero
-		
+
 	Parameters
 	----------
 	cmap_name : string
 		The name of the matplotlib cmap
-	
+
 	Returns
 	-------
 	cmap : dict
@@ -667,4 +668,3 @@ def cm_hide_lower(cmap_name):
 		cmap_array = np.column_stack((cmap_array, np.ones(len(cmap_array))))
 	cmap_array[0,-1] = 0
 	return colors.ListedColormap(colors = cmap_array, name = cmap_name)
-
